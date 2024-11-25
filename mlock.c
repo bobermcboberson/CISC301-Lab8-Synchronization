@@ -13,6 +13,7 @@ mtx_t mutex;
 
 // Countdown function
 int countdown(void *args) {
+    int thread_id = *(int *)args;
     // thread will continuously work to decrement
     while (1) {
         // lock access to this thing
@@ -23,7 +24,7 @@ int countdown(void *args) {
             break;
         }
         --shared_int;
-        printf("decremented shared_int: %d\n", shared_int);
+        printf("thread %d decremented shared_int: %d\n", thread_id, shared_int);
         mtx_unlock(&mutex);
         thrd_yield;
     }
@@ -32,6 +33,7 @@ int countdown(void *args) {
 
 int main() {
     thrd_t threads[number_of_threads];
+    int thread_ids[number_of_threads];
 
     // Initialize Mutex
     if (mtx_init(&mutex, mtx_plain) != thrd_success) {
@@ -41,8 +43,9 @@ int main() {
 
     // Initialize Threads
     for (int i = 0; i < number_of_threads; ++i) {
+        thread_ids[i] = i+1;
         // if contidion creates the thread in order to check the success condition
-        if (thrd_create(&threads[i], countdown, NULL) != thrd_success) {
+        if (thrd_create(&threads[i], countdown, &thread_ids[i]) != thrd_success) {
             printf("failed to create thread %d\n", i + 1);
         }
     }
