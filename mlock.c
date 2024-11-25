@@ -17,26 +17,21 @@ int countdown(void *args) {
     while (1) {
         // lock access to this thing
         mtx_lock(&mutex);
-        // if conditon will see if we get to 0
-        if (shared_int > 0) {
-            --shared_int;
-            printf("Thread %p decremented, new value: %d\n", args, shared_int);
-            // unlock access to this thing
-            mtx_unlock(&mutex);
-        } else {
-        // if the int <= 0, we unlock the mutex on the variable and break out of the loop
-        // this will stop our while(1) loop
-        // unlock access to the thing
+        // if shared_int reaches or passes 0, end
+        if (shared_int <= 0) {
             mtx_unlock(&mutex);
             break;
         }
+        --shared_int;
+        printf("decremented shared_int: %d\n", shared_int);
+        mtx_unlock(&mutex);
+        thrd_yield;
     }
     return 0;
 }
 
 int main() {
     thrd_t threads[number_of_threads];
-    long thread_ids[number_of_threads];
 
     // Initialize Mutex
     if (mtx_init(&mutex, mtx_plain) != thrd_success) {
@@ -46,9 +41,8 @@ int main() {
 
     // Initialize Threads
     for (int i = 0; i < number_of_threads; ++i) {
-        thread_ids[i] = i + 1;
         // if contidion creates the thread in order to check the success condition
-        if (thrd_create(&thread_ids[i], countdown, &thread_ids[i]) != thrd_success) {
+        if (thrd_create(&threads[i], countdown, NULL) != thrd_success) {
             printf("failed to create thread %d\n", i + 1);
         }
     }
@@ -62,4 +56,5 @@ int main() {
     mtx_destroy(&mutex);
 
     printf("Final value of shared variable: %d\n", shared_int);
+    return 0;
 }
